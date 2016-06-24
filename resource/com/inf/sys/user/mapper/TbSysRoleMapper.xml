@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.inf.sys.user.mapper.TbSysRoleMapper" >
+ 
+  <resultMap id="BaseResultMap" type="com.inf.sys.user.model.TbSysRole" >
+    <id column="ROLE_ID" property="roleId" jdbcType="VARCHAR" />
+    <result column="ROLE_NAME" property="roleName" jdbcType="VARCHAR" />
+    <result column="REMARK_DESC" property="remarkDesc" jdbcType="VARCHAR" />
+    <result column="CREATE_USER" property="createUser" jdbcType="VARCHAR" />
+    <result column="CREATE_TIME" property="createTime" jdbcType="TIMESTAMP" />
+    <result column="UPDATE_USER" property="updateUser" jdbcType="VARCHAR" />
+    <result column="UPDATE_TIME" property="updateTime" jdbcType="TIMESTAMP" />
+    <result column="STATUS" property="status" jdbcType="INTEGER" />
+  </resultMap>
+  
+   <resultMap id="BaseResultMap_Privil" type="com.inf.sys.user.model.TbSysPrivilege" >
+    <id column="PRIV_ID" property="privId" jdbcType="VARCHAR" />
+    <result column="ROLE_ID" property="roleId" jdbcType="VARCHAR" />
+    <result column="RES_ID" property="resId" jdbcType="VARCHAR" />
+    <result column="CREATE_USER" property="createUser" jdbcType="VARCHAR" />
+    <result column="CREATE_TIME" property="createTime" jdbcType="TIMESTAMP" />
+    <result column="UPDATE_USER" property="updateUser" jdbcType="VARCHAR" />
+    <result column="UPDATE_TIME" property="updateTime" jdbcType="TIMESTAMP" />
+    <result column="REMARK_DESC" property="remarkDesc" jdbcType="VARCHAR" />
+    <result column="STATUS" property="status" jdbcType="INTEGER" />
+  </resultMap>
+  
+  <sql id="Base_Column_List" >
+    ROLE_ID, ROLE_NAME, REMARK_DESC, CREATE_USER, CREATE_TIME, UPDATE_USER, 
+    UPDATE_TIME, STATUS
+  </sql>
+  
+  <sql id="Base_Column_List_Privil" >
+   PRIV_ID, ROLE_ID, RES_ID,  CREATE_USER, CREATE_TIME, UPDATE_USER, 
+    UPDATE_TIME,REMARK_DESC, STATUS
+  </sql>
+  
+ <!-- 获取用户的角色 -->
+  <select id="selectByTbSysRole" resultType="map"   parameterType="map" >
+    SELECT 
+      r.ROLE_ID AS roleId,
+      r.ROLE_NAME AS roleName
+    FROM tb_user_role AS t
+    LEFT JOIN tb_sys_role AS r
+      ON t.ROLE_ID = r.ROLE_ID  AND  t.STATUS=0
+    WHERE t.USER_ID = #{mapper.userId,jdbcType=VARCHAR} AND  t.STATUS=0
+  </select>
+  
+  <!-- 增加角色 -->
+  <insert id="addSysRoleAdd" parameterType="com.inf.sys.user.model.TbSysRole" >
+    INSERT INTO tb_sys_role
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+        ROLE_ID,
+      <if test="roleName != null" >
+        ROLE_NAME,
+      </if>
+      <if test="remarkDesc != null" >
+        REMARK_DESC,
+      </if>
+      <if test="createUser != null" >
+        CREATE_USER,
+      </if>
+        CREATE_TIME,
+        STATUS,
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+		UUID(),
+      <if test="roleName != null" >
+        #{roleName,jdbcType=VARCHAR},
+      </if>
+      <if test="remarkDesc != null" >
+        #{remarkDesc,jdbcType=VARCHAR},
+      </if>
+      <if test="createUser != null" >
+        #{createUser,jdbcType=VARCHAR},
+      </if>
+        NOW(),
+     	0,
+    </trim>
+  </insert>
+  
+  <!-- 获取角色信息 -->
+  <select id="getSysRoleData" parameterType="com.inf.sys.user.model.TbSysRole" resultMap="BaseResultMap">
+    SELECT 
+    <include refid="Base_Column_List"></include>
+     FROM  tb_sys_role
+     WHERE  STATUS =0
+     AND  ROLE_NAME = #{roleName,jdbcType=VARCHAR}
+  </select>
+  
+  
+  <!-- 角色添加资源 -->
+  <insert id="addPrivilegeList" parameterType="java.util.List" >
+   INSERT INTO  tb_sys_privilege(
+         	PRIV_ID,
+   			ROLE_ID,
+   			RES_ID,
+   			CREATE_USER,
+   			CREATE_TIME,
+   			REMARK_DESC,
+   			STATUS
+   )
+   VALUES
+   <foreach collection="list" item="item" index="index" separator="," >
+      (
+        		UUID(),
+        		#{item.roleId},
+        		#{item.resId},
+        		#{item.createUser},
+        		NOW(),
+        		#{item.remarkDesc},
+        		0
+        	)  
+   </foreach>
+  </insert>
+
+  <!-- 更新角色信息 -->
+  <update id="updateSysRole" parameterType="com.inf.sys.user.model.TbSysRole" >
+		UPDATE tb_sys_role t 
+			SET
+			  	t.ROLE_NAME = #{roleName,jdbcType=VARCHAR},
+				t.UPDATE_USER = #{updateUser,jdbcType=VARCHAR},
+				t.UPDATE_TIME = NOW()
+		WHERE 	t.ROLE_ID=#{roleId,jdbcType=VARCHAR}
+ </update>
+  
+  <!-- 获取角色列表 -->
+  <select id="getSysRolesListPage" resultType="map">
+		SELECT 
+			r.ROLE_ID AS roleId
+			,r.ROLE_NAME AS roleName
+			,r.STATUS AS status
+			,u1.LOGIN_NAME AS createUserName
+			,r.CREATE_TIME AS createTime
+			,u2.LOGIN_NAME AS updateUserName
+			,r.UPDATE_TIME AS updateTime
+		FROM tb_sys_role AS r
+		LEFT JOIN tb_sys_user  AS u1
+			ON r.CREATE_USER = u1.USER_ID
+		LEFT JOIN tb_sys_user AS u2
+			ON r.UPDATE_USER = u2.USER_ID
+		WHERE r.STATUS = 0
+		<if test="roleName != null and roleName != ''">
+			AND r.ROLE_NAME like CONCAT('%',#{roleName},'%')
+		</if>
+		  ORDER BY  createTime DESC
+	</select>
+	
+	<!-- 验证角色是否已存在 -->
+	<select id="checkExist" parameterType="java.util.HashMap" resultType="java.lang.Integer">
+		SELECT COUNT(*) FROM tb_sys_role WHERE  ROLE_NAME = #{newValue} and STATUS = 0
+		<if test="oldValue != '' and oldValue != null">
+			AND ROLE_NAME != #{oldValue}
+		</if>
+	</select>
+	
+	<!-- 获取所有权限列表 -->
+	<select id="getRoleTreeList" resultType="com.inf.sys.user.model.TreeNode">  
+		SELECT 
+			s.RES_ID as id,
+			s.RES_NAME as text,
+			s.PAREND_RES_ID as parentId
+		FROM tb_sys_resource s 
+		<if test="roleIds !=null and roleIds !=''">
+		LEFT JOIN  tb_sys_privilege as p
+			ON p.RES_ID=s.RES_ID AND p.STATUS=0 AND p.ROLE_ID IN (#{roleIds})
+		</if>
+		WHERE s.STATUS = 0 GROUP BY  s.RES_ID
+		ORDER BY s.RES_ORDER ASC
+	</select>
+	
+ <!-- 根据用户角色id 获取对应的权限 -->
+ <select id="getPrivilegeListByRoleId" parameterType="String" resultMap="BaseResultMap_Privil">
+   	SELECT
+    <include refid="Base_Column_List_Privil" />
+   FROM  tb_sys_privilege WHERE ROLE_ID=#{roleId} AND  STATUS=0
+ </select>  
+ 
+ <!-- 根据角色id 删除角色资源 -->
+ <delete id="deletePrivilegeListByRoleId" parameterType="String">
+   UPDATE  tb_sys_privilege SET STATUS=1 WHERE ROLE_ID=#{roleId}
+ </delete>
+ 
+ 
+ <!-- 验证角色下是否存在用户 -->
+ <select id="sysRoleCheckUser" parameterType="String" resultType="java.lang.Integer">
+    SELECT COUNT(*) FROM tb_user_role WHERE  ROLE_ID = #{roleId} AND STATUS=0
+ </select>
+ 
+ <!-- 删除角色 -->
+ <update id="deleteSysRole">
+  UPDATE tb_sys_role set STATUS=1  WHERE ROLE_ID  IN 
+		<foreach item="item" index="index" collection="list" open="(" separator="," close=")">  
+		  #{item}  
+		</foreach>  
+ </update>
+ 
+ <!-- 获取系统角色列表 -->
+ <select id="getSysRole"  resultMap="BaseResultMap">
+   SELECT 
+     <include refid="Base_Column_List" />
+    FROM tb_sys_role WHERE STATUS=0
+ </select>
+	
+		
+</mapper>

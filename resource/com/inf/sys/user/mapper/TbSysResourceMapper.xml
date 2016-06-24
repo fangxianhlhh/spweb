@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.inf.sys.user.mapper.TbSysResourceMapper" >
+  <resultMap id="BaseResultMap" type="com.inf.sys.user.model.TbSysResource" >
+    <id column="RES_ID" property="resId" jdbcType="VARCHAR" />
+    <result column="RES_NAME" property="resName" jdbcType="VARCHAR" />
+    <result column="RES_TYPE" property="resType" jdbcType="INTEGER" />
+    <result column="RES_URL" property="resUrl" jdbcType="VARCHAR" />
+    <result column="PAREND_RES_ID" property="parendResId" jdbcType="VARCHAR" />
+    <result column="RES_LEVEL" property="resLevel" jdbcType="BIGINT" />
+    <result column="RES_ORDER" property="resOrder" jdbcType="BIGINT" />
+    <result column="REMARK_DESC" property="remarkDesc" jdbcType="VARCHAR" />
+    <result column="CREATE_USER" property="createUser" jdbcType="VARCHAR" />
+    <result column="CREATE_TIME" property="createTime" jdbcType="TIMESTAMP" />
+    <result column="UPDATE_USER" property="updateUser" jdbcType="VARCHAR" />
+    <result column="UPDATE_TIME" property="updateTime" jdbcType="TIMESTAMP" />
+    <result column="STATUS" property="status" jdbcType="INTEGER" />
+  </resultMap>
+  
+  <sql id="Base_Column_List" >
+    RES_ID, RES_NAME, RES_TYPE, RES_URL, PAREND_RES_ID, RES_LEVEL, RES_ORDER, REMARK_DESC, 
+    CREATE_USER, CREATE_TIME, UPDATE_USER, UPDATE_TIME, STATUS
+  </sql>
+  
+  
+  <!-- 删除资源 -->
+  <update id="deleteByResId" parameterType="com.inf.sys.user.model.TbSysResource" >
+    UPDATE  tb_sys_resource
+       SET UPDATE_USER=#{updateUser,jdbcType=VARCHAR},
+           STATUS=1,
+           UPDATE_TIME=NOW()
+    WHERE RES_ID = #{resId,jdbcType=VARCHAR}
+  </update>
+  
+  <!-- 添加系统资源 -->
+  <insert id="insertTbSysResource" parameterType="com.inf.sys.user.model.TbSysResource" >
+    INSERT INTO  tb_sys_resource
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+        RES_ID,
+      <if test="resName != null" >
+        RES_NAME,
+      </if>
+      <if test="resType != null" >
+        RES_TYPE,
+      </if>
+      <if test="resUrl != null" >
+        RES_URL,
+      </if>
+      <if test="parendResId != null" >
+        PAREND_RES_ID,
+      </if>
+      <if test="resLevel != null" >
+        RES_LEVEL,
+      </if>
+      <if test="resOrder != null" >
+        RES_ORDER,
+      </if>
+      <if test="remarkDesc != null" >
+        REMARK_DESC,
+      </if>
+      <if test="createUser != null" >
+        CREATE_USER,
+      </if>
+        CREATE_TIME,
+        STATUS,
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+       UUID(),
+      <if test="resName != null" >
+        #{resName,jdbcType=VARCHAR},
+      </if>
+      <if test="resType != null" >
+        #{resType,jdbcType=INTEGER},
+      </if>
+      <if test="resUrl != null" >
+        #{resUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="parendResId != null" >
+        #{parendResId,jdbcType=VARCHAR},
+      </if>
+      <if test="resLevel != null" >
+        #{resLevel,jdbcType=BIGINT},
+      </if>
+      <if test="resOrder != null" >
+        #{resOrder,jdbcType=BIGINT},
+      </if>
+      <if test="remarkDesc != null" >
+        #{remarkDesc,jdbcType=VARCHAR},
+      </if>
+      <if test="createUser != null" >
+        #{createUser,jdbcType=VARCHAR},
+      </if>
+      NOW(),
+      0,
+    </trim>
+  </insert>
+  
+  <!-- 修改资源信息 -->
+  <update id="updateTbSysResource" parameterType="com.inf.sys.user.model.TbSysResource" >
+    UPDATE tb_sys_resource
+    <set >
+      <if test="resName != null" >
+        RES_NAME = #{resName,jdbcType=VARCHAR},
+      </if>
+      <if test="resType != null" >
+        RES_TYPE = #{resType,jdbcType=INTEGER},
+      </if>
+        RES_URL = #{resUrl,jdbcType=VARCHAR},
+      <if test="resOrder != null" >
+        RES_ORDER = #{resOrder,jdbcType=BIGINT},
+      </if>
+      <if test="remarkDesc != null" >
+        REMARK_DESC = #{remarkDesc,jdbcType=VARCHAR},
+      </if>
+      <if test="updateUser != null" >
+        UPDATE_USER = #{updateUser,jdbcType=VARCHAR},
+      </if>
+        UPDATE_TIME = NOW()
+    </set>
+    WHERE RES_ID = #{resId,jdbcType=VARCHAR}
+  </update>
+  
+  
+  <!-- 获取所有资源列表树， 一次全部加载使用 -->
+   <select id="getResourceTreeList" resultType="com.inf.sys.user.model.ResourceTree">
+      SELECT 
+    		  RES_ID AS resId
+    		, RES_NAME AS resName
+    		, RES_TYPE AS resType
+    		, RES_URL AS resUrl
+    		, PAREND_RES_ID AS parendResId
+    		, RES_LEVEL AS resLevel
+    		, RES_ORDER AS resOrder
+    		, REMARK_DESC AS  remarkDesc
+  FROM tb_sys_resource
+  WHERE STATUS=0
+   </select>
+   
+    <!-- 获取所有资源列表 -->
+   <select id="getResourceList" resultType="com.inf.sys.user.model.ResourceList" parameterType="com.inf.sys.user.model.ResourceList">
+      SELECT 
+    		  r.RES_ID AS resId
+    		, r.RES_NAME AS resName
+    		, r.RES_TYPE AS resType
+    		, r.RES_URL AS resUrl
+    		, r.PAREND_RES_ID AS parendResId
+    		, r.RES_LEVEL AS resLevel
+    		, r.RES_ORDER AS resOrder
+    		, r.REMARK_DESC AS  remarkDesc
+    		,IF(t.counts > 0 , 'closed','open') AS state
+  FROM tb_sys_resource as r
+   LEFT JOIN (SELECT PAREND_RES_ID, COUNT(*) AS counts FROM tb_sys_resource 
+               WHERE STATUS=0 GROUP BY PAREND_RES_ID) AS t
+        ON t.PAREND_RES_ID= r.RES_ID
+  WHERE r.STATUS=0
+  <if test="resLevel !=null and resLevel != ''">
+    AND r.RES_LEVEL=#{resLevel,jdbcType=BIGINT}
+  </if>
+  <if test="parendResId !=null and parendResId != ''">
+    AND r.PAREND_RES_ID=#{parendResId,jdbcType=VARCHAR}
+  </if> 
+  </select>
+  
+  <!--通过资源名查询资源 -->
+  <select id="checkValidResName"  resultMap="BaseResultMap">
+    SELECT 
+     	<include refid="Base_Column_List" />
+     FROM tb_sys_resource
+      WHERE STATUS=0 AND RES_NAME = #{resName,jdbcType=VARCHAR}
+  </select>
+  
+  <!-- 通过resID 查询资源的信息 -->
+  <select id="findResourceByResId" resultMap="BaseResultMap">
+   SELECT 
+     	<include refid="Base_Column_List" />
+     FROM tb_sys_resource
+      WHERE STATUS=0 AND RES_ID = #{resId,jdbcType=VARCHAR}
+  </select>
+  
+</mapper>

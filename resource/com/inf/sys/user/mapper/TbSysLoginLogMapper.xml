@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.inf.sys.user.mapper.TbSysLoginLogMapper" >
+  <resultMap id="BaseResultMap" type="com.inf.sys.user.model.TbSysLoginLog" >
+    <id column="LID" property="lid" jdbcType="VARCHAR" />
+    <result column="USER_ID" property="userId" jdbcType="VARCHAR" />
+    <result column="LOGIN_IP" property="loginIp" jdbcType="VARCHAR" />
+    <result column="LOGIN_TIME" property="loginTime" jdbcType="TIMESTAMP" />
+    <result column="REMARK_DESC" property="remarkDesc" jdbcType="VARCHAR" />
+  </resultMap>
+  
+  <sql id="Base_Column_List" >
+    LID, USER_ID, LOGIN_IP, LOGIN_TIME, REMARK_DESC
+  </sql>
+  
+<!-- 获取系统登录日志列表 -->
+  <select id="getLoginLogListPage" resultType="map" parameterType="map" >
+    SELECT
+           l.LID AS lid,
+           l.LOGIN_IP AS loginIp,
+           DATE_FORMAT(l.LOGIN_TIME,'%Y-%m-%d-%T')  AS loginTime,
+           l.REMARK_DESC AS remarkDesc,
+           u.USER_NAME AS userName,
+           u.LOGIN_NAME AS loginName 
+        FROM tb_sys_login_log AS l 
+        LEFT JOIN  tb_sys_user AS u 
+          ON l.USER_ID = u.USER_ID
+        	WHERE u.STATUS=0
+         <if test="paramMap.LoginName != null and paramMap.LoginName !=''">
+	    AND u.LOGIN_NAME like CONCAT('%',#{paramMap.LoginName},'%')
+	    </if>
+	    <if test="paramMap.loginlog_startTime != null and paramMap.loginlog_startTime != ''" >
+			AND date_format(l.LOGIN_TIME,'%Y-%m-%d') >= #{paramMap.loginlog_startTime}
+		</if>
+	   <if test="paramMap.loginlog_endTime != null and paramMap.loginlog_endTime != ''">
+	   <![CDATA[
+		and date_format(l.LOGIN_TIME,'%Y-%m-%d') <= #{paramMap.loginlog_endTime}
+		]]>
+		</if>
+		ORDER BY  l.LOGIN_TIME DESC
+  </select>
+ 
+  
+  <!-- 添加用户登录信息 -->
+  <insert id="insertTbSysLoginLog" parameterType="com.inf.sys.user.model.TbSysLoginLog" >
+    insert into tb_sys_login_log
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+        LID,
+      <if test="userId != null" >
+        USER_ID,
+      </if>
+      <if test="loginIp != null" >
+        LOGIN_IP,
+      </if>
+        LOGIN_TIME,
+      <if test="remarkDesc != null" >
+        REMARK_DESC,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+        UUID(),
+      <if test="userId != null" >
+        #{userId,jdbcType=VARCHAR},
+      </if>
+      <if test="loginIp != null" >
+        #{loginIp,jdbcType=VARCHAR},
+      </if>
+        NOW(),
+      <if test="remarkDesc != null" >
+        #{remarkDesc,jdbcType=VARCHAR},
+      </if>
+    </trim>
+  </insert>
+ 
+ <!--通过记录id 获取系统登录日志信息 -->
+ <select id="getLoginLogDetail" resultType="map" parameterType="String">
+          SELECT
+           		l.LID AS lid,
+           		l.LOGIN_IP AS loginIp,
+           		DATE_FORMAT(l.LOGIN_TIME,'%Y-%m-%d-%T')  AS loginTime,
+           		l.REMARK_DESC AS remarkDesc,
+           		u.USER_NAME AS userName,
+           		u.LOGIN_NAME AS loginName
+           FROM tb_sys_login_log AS l 
+           LEFT JOIN  tb_sys_user AS u 
+           ON  l.USER_ID = u.USER_ID
+           WHERE u.STATUS=0 AND  l.LID=#{lid}
+     </select>
+  
+</mapper>

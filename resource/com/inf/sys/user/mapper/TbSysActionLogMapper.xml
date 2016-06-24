@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.inf.sys.user.mapper.TbSysActionLogMapper" >
+  <resultMap id="BaseResultMap" type="com.inf.sys.user.model.TbSysActionLog" >
+    <id column="ACTION_ID" property="actionId" jdbcType="VARCHAR" />
+    <result column="USER_ID" property="userId" jdbcType="VARCHAR" />
+    <result column="ACTION_LOGS" property="actionLogs" jdbcType="VARCHAR" />
+    <result column="CREATE_TIME" property="createTime" jdbcType="TIMESTAMP" />
+    <result column="REMARK_DESC" property="remarkDesc" jdbcType="VARCHAR" />
+  </resultMap>
+  
+  <sql id="Base_Column_List" >
+    ACTION_ID, USER_ID, ACTION_LOGS, CREATE_TIME, REMARK_DESC
+  </sql>
+  
+  <!-- 添加系统操作日志 -->
+  <insert id="insertTbSysActionLog" parameterType="com.inf.sys.user.model.TbSysActionLog" >
+    INSERT INTO tb_sys_action_log
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+        ACTION_ID,
+      <if test="userId != null" >
+        USER_ID,
+      </if>
+      <if test="actionLogs != null" >
+        ACTION_LOGS,
+      </if>
+        CREATE_TIME,
+      <if test="remarkDesc != null" >
+        REMARK_DESC,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+         UUID(),
+      <if test="userId != null" >
+        #{userId,jdbcType=VARCHAR},
+      </if>
+      <if test="actionLogs != null" >
+        #{actionLogs,jdbcType=VARCHAR},
+      </if>
+       NOW(),
+      <if test="remarkDesc != null" >
+        #{remarkDesc,jdbcType=VARCHAR},
+      </if>
+    </trim>
+  </insert>
+  
+  <!--操作日志分页查询 -->
+  <select id="getSystemlogListPage" parameterType="map" resultType="map">
+   	SELECT
+   			s.ACTION_ID AS actionId,
+   			s.ACTION_LOGS AS actionLogs,
+   			DATE_FORMAT(s.CREATE_TIME,'%Y-%m-%d-%T')  AS loginTime,
+   			s.REMARK_DESC AS remarkDesc,
+    		u.USER_NAME AS userName,
+    		u.LOGIN_NAME  AS  loginName
+      FROM tb_sys_action_log AS s 
+       LEFT JOIN tb_sys_user AS u 
+        ON s.USER_ID=u.USER_ID
+        WHERE u.STATUS=0
+         <if test="paramMap.loginName != null and paramMap.loginName !=''">
+	    and u.LOGIN_NAME like CONCAT('%',#{paramMap.loginName},'%')
+	    </if>
+	    <if test="paramMap.systemlog_startTime != null and paramMap.systemlog_startTime != ''" >
+			and date_format(s.CREATE_TIME,'%Y-%m-%d') >= #{paramMap.systemlog_startTime}
+		</if>
+	   <if test="paramMap.systemlog_endTime != null and paramMap.systemlog_endTime != ''">
+	   <![CDATA[
+		and date_format(s.CREATE_TIME,'%Y-%m-%d') <= #{paramMap.systemlog_endTime}
+		]]>
+		</if>
+		ORDER BY  s.CREATE_TIME DESC
+</select>
+
+<select id="getSystemLogDetail" resultType="map" parameterType="String">
+          SELECT
+   			s.ACTION_ID AS actionId,
+   			s.ACTION_LOGS AS actionLogs,
+   			DATE_FORMAT(s.CREATE_TIME,'%Y-%m-%d-%T')  AS loginTime,
+   			s.REMARK_DESC AS remarkDesc,
+    		u.USER_NAME AS userName,
+    		u.LOGIN_NAME  AS  loginName
+      FROM tb_sys_action_log AS s 
+       LEFT JOIN tb_sys_user AS u 
+        ON s.USER_ID=u.USER_ID
+       WHERE u.STATUS=0
+         AND  s.ACTION_ID=#{actionId}
+     </select>
+     
+</mapper>

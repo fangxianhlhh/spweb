@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.inf.sys.user.mapper.TbSysUserMapper" >
+  <resultMap id="BaseResultMap" type="com.inf.sys.user.model.TbSysUser" >
+    <id column="USER_ID" property="userId" jdbcType="VARCHAR" />
+    <result column="LOGIN_NAME" property="loginName" jdbcType="VARCHAR" />
+    <result column="PASSWORD" property="password" jdbcType="VARCHAR" />
+    <result column="USER_NAME" property="userName" jdbcType="VARCHAR" />
+    <result column="PHONE" property="phone" jdbcType="VARCHAR" />
+    <result column="EMAIL" property="email" jdbcType="VARCHAR" />
+    <result column="LAST_LOGIN_TIME" property="lastLoginTime" jdbcType="TIMESTAMP" />
+    <result column="CREATE_USER" property="createUser" jdbcType="VARCHAR" />
+    <result column="CREATE_TIME" property="createTime" jdbcType="TIMESTAMP" />
+    <result column="UPDATE_USER" property="updateUser" jdbcType="VARCHAR" />
+    <result column="UPDATE_TIMES" property="updateTimes" jdbcType="TIMESTAMP" />
+    <result column="DESCS" property="descs" jdbcType="VARCHAR" />
+    <result column="STATUS" property="status" jdbcType="INTEGER" />
+  </resultMap>
+  
+  <sql id="Base_Column_List" >
+    USER_ID, LOGIN_NAME, PASSWORD, USER_NAME, PHONE, EMAIL, LAST_LOGIN_TIME,  
+    CREATE_USER, CREATE_TIME, UPDATE_USER, UPDATE_TIMES, DESCS, STATUS
+  </sql>
+  
+  <!-- 增加管理员用户 -->
+  <insert id="insertTbSysUser" parameterType="com.inf.sys.user.model.TbSysUser" >
+    INSERT INTO  tb_sys_user
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+        USER_ID,
+      <if test="loginName != null" >
+        LOGIN_NAME,
+      </if>
+      <if test="password != null" >
+        PASSWORD,
+      </if>
+      <if test="userName != null" >
+        USER_NAME,
+      </if>
+      <if test="phone != null" >
+        PHONE,
+      </if>
+      <if test="email != null" >
+        EMAIL,
+      </if>
+      <if test="createUser != null" >
+        CREATE_USER,
+      </if>
+        CREATE_TIME,
+      <if test="descs != null" >
+        DESCS,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      	UUID(),
+      <if test="loginName != null" >
+        #{loginName,jdbcType=VARCHAR},
+      </if>
+      <if test="password != null" >
+        #{password,jdbcType=VARCHAR},
+      </if>
+      <if test="userName != null" >
+        #{userName,jdbcType=VARCHAR},
+      </if>
+      <if test="phone != null" >
+        #{phone,jdbcType=VARCHAR},
+      </if>
+      <if test="email != null" >
+        #{email,jdbcType=VARCHAR},
+      </if>
+      <if test="createUser != null" >
+        #{createUser,jdbcType=VARCHAR},
+      </if>
+        NOW(),
+      <if test="descs != null" >
+        #{descs,jdbcType=VARCHAR},
+      </if>
+    </trim>
+  </insert>
+  
+  <!-- 修改用户信息 -->
+  <update id="updateTbSysUser" parameterType="com.inf.sys.user.model.TbSysUser" >
+    UPDATE tb_sys_user
+    <set >
+      <if test="loginName != null" >
+        LOGIN_NAME = #{loginName,jdbcType=VARCHAR},
+      </if>
+      <if test="password != null" >
+        PASSWORD = #{password,jdbcType=VARCHAR},
+      </if>
+      <if test="userName != null" >
+        USER_NAME = #{userName,jdbcType=VARCHAR},
+      </if>
+      <if test="phone != null" >
+        PHONE = #{phone,jdbcType=VARCHAR},
+      </if>
+      <if test="email != null" >
+        EMAIL = #{email,jdbcType=VARCHAR},
+      </if>
+      <if test="updateUser != null" >
+        UPDATE_USER = #{updateUser,jdbcType=VARCHAR},
+      </if>
+        UPDATE_TIMES =NOW(),
+      <if test="descs != null" >
+        DESCS = #{descs,jdbcType=VARCHAR},
+      </if>
+    </set>
+    WHERE USER_ID = #{userId,jdbcType=VARCHAR}
+  </update>
+  
+  
+    <!-- 查询用户信息 -->
+    <select id="selectByParam" resultMap="BaseResultMap" parameterType="map" >
+     SELECT 'true' AS QUERYID,
+    <include refid="Base_Column_List" />
+    FROM tb_sys_user
+    WHERE STATUS = 0
+     <if test="mapper.userId !=null">
+    	 AND   USER_ID = #{mapper.userId,jdbcType=VARCHAR}
+     </if>
+     <if test="mapper.loginName !=null">
+        AND LOGIN_NAME = #{mapper.loginName,jdbcType=VARCHAR}
+     </if>
+  </select>
+  
+  <!-- 分页查询所有管理员信息 -->
+  <select id="getSysUserListPage"  resultType="map" parameterType="map">
+      <![CDATA[
+			SELECT 
+				 u.USER_ID AS  userId
+				,u.LOGIN_NAME AS loginName
+				,u.USER_NAME AS userName
+				,u.PHONE AS phone
+				,u.EMAIL AS email
+				,DATE_FORMAT(u.CREATE_TIME,'%Y-%m-%d-%T') AS createTime
+				,DATE_FORMAT(u.LAST_LOGIN_TIME,'%Y-%m-%d-%T')  AS lastLoginTime
+				,GROUP_CONCAT(DISTINCT(r.ROLE_NAME)) AS roleName
+			FROM tb_sys_user  AS  u
+			LEFT JOIN  tb_user_role  AS t
+			  ON  u.USER_ID=t.USER_ID AND  t.STATUS=0
+			LEFT JOIN tb_sys_role  AS  r 
+				ON t.ROLE_ID = r.ROLE_ID AND r.STATUS=0
+		]]>
+		<trim prefix="where" prefixOverrides="and |or">
+			 u.STATUS = 0 
+			<if test="mapper.createTime_s != null and mapper.createTime_s != ''" >
+				AND DATE_FORMAT(u.CREATE_TIME,'%Y-%m-%d') >= #{mapper.createTime_s}
+			</if>
+			<if test="mapper.createTime_e != null and mapper.createTime_e != ''">
+			<![CDATA[
+				AND DATE_FORMAT(u.CREATE_TIME,'%Y-%m-%d') <= #{mapper.createTime_e}
+				]]>
+			</if>
+			<if test="mapper.loginName != null and mapper.loginName != ''">
+				AND u.LOGIN_NAME LIKE concat('%',#{mapper.loginName},'%')
+			</if>
+			<if test="mapper.roleId != null and mapper.roleId != ''">
+				AND r.ROLE_ID = #{mapper.roleId}
+			</if>
+			 GROUP BY u.USER_ID  ORDER BY u.CREATE_TIME DESC
+		</trim>
+  </select>
+  
+  
+  <!-- 管理员登录 -->
+  <select id="getLoginUser" resultMap="BaseResultMap" parameterType="map">
+    SELECT 'true' AS QUERYID,
+    <include refid="Base_Column_List" />
+    FROM tb_sys_user
+    WHERE STATUS=0  
+    	AND LOGIN_NAME= #{mapper.loginName,jdbcType=VARCHAR} 
+        AND PASSWORD = #{mapper.password,jdbcType=VARCHAR}
+  </select>
+  
+  
+  
+  <!--获取用户的菜单资源  -->
+  <select id="getUserRoleResource" resultType="com.inf.sys.user.model.Menu" parameterType="string">
+  SELECT   
+  		s.RES_ID AS resId,
+  		s.RES_NAME  AS resName,
+ 		s.PAREND_RES_ID AS resParentId,
+  		s.RES_URL AS  resUrl 
+   FROM  tb_sys_resource AS s
+   LEFT JOIN  tb_sys_privilege AS p
+  	  ON p.RES_ID = s.RES_ID AND p.STATUS=0
+   LEFT JOIN tb_sys_role AS r
+      ON r.ROLE_ID = p.ROLE_ID AND r.STATUS=0
+   LEFT JOIN tb_user_role AS a
+      ON  a.ROLE_ID = r.ROLE_ID AND a.STATUS=0
+   WHERE a.USER_ID=#{userId ,jdbcType=VARCHAR} AND s.STATUS=0  AND s.RES_LEVEL > 0
+   GROUP BY s.RES_ID  ORDER BY s.RES_ORDER ASC
+  </select>
+  
+  <!-- 超级管理员获取所有的资源 -->
+  <select id="getUserRoleResourceIsAdmin" resultType="com.inf.sys.user.model.Menu">
+    SELECT   
+  		s.RES_ID AS resId,
+  		s.RES_NAME  AS resName,
+ 		s.PAREND_RES_ID AS resParentId,
+  		s.RES_URL AS  resUrl 
+   FROM  tb_sys_resource AS s
+   WHERE s.STATUS=0 AND s.RES_LEVEL > 0  GROUP BY s.RES_ID  ORDER BY s.RES_ORDER ASC
+  </select>
+  
+  <!-- 根据父资源id 获取资源的信息 -->
+  <select id="getUserRoleResourceIsParent" resultType="com.inf.sys.user.model.Menu" >
+    SELECT   
+  		s.RES_ID AS resId,
+  		s.RES_NAME  AS resName,
+ 		s.PAREND_RES_ID AS resParentId,
+  		s.RES_URL AS  resUrl 
+   FROM  tb_sys_resource AS s
+   WHERE s.STATUS=0 AND  s.RES_ID IN
+   <foreach collection="list" item="item" index="index" open="(" separator="," close=")" >
+		#{item}  
+    </foreach>
+  </select>
+  
+  <!-- 验证用户名是否已经被使用 -->
+  <select id="checkValidLoginName" resultType="com.inf.sys.user.model.TbSysUser">
+    SELECT 
+    	USER_ID AS userId,
+   		LOGIN_NAME AS loginName,
+   		USER_NAME AS userName,
+   		PHONE AS phone,
+   		EMAIL AS email 
+    FROM  tb_sys_user WHERE LOGIN_NAME=#{loginName,jdbcType=VARCHAR} AND STATUS=0 
+  </select>
+  
+  <!-- 用户添加角色 -->
+  <insert id="insertUserRoles" parameterType="java.util.List">
+    INSERT INTO  tb_user_role(
+       		TUR_ID,
+   			USER_ID  ,
+   			ROLE_ID  ,
+   			CREATE_USER,
+   			CREATE_TIME 
+    )
+    values
+     <foreach collection="list" item="item" index="index" separator=",">
+       (
+         UUID(),
+        #{item.userId},
+        #{item.roleId},
+        #{item.createUser},
+        NOW() 
+        )
+     </foreach>
+  </insert>
+  
+  <!-- 获取单个用户信息 -->
+  <select id="getSysUserDetail" parameterType="String"  resultType="map">
+     SELECT 
+      	 u.USER_ID  AS userId
+        ,u.LOGIN_NAME AS loginName
+        ,u.USER_NAME AS  userName
+        ,u.PHONE AS phone
+        ,u.EMAIL AS email
+        ,u.DESCS AS descs
+        ,GROUP_CONCAT(DISTINCT(t.ROLE_ID))  AS roleIds
+    FROM tb_sys_user AS u
+     LEFT JOIN tb_user_role AS t
+      ON t.USER_ID=u.USER_ID AND t.STATUS=0
+    WHERE u.STATUS = 0 AND u.USER_ID = #{userId,jdbcType=VARCHAR}
+  </select>
+  
+  <!-- 根据用户id删除用户角色 -->
+  <update id="updateSysUserRole" parameterType="String">
+   UPDATE tb_user_role SET STATUS=1  WHERE USER_ID=#{userId,jdbcType=VARCHAR} AND STATUS=0 
+  </update>
+  
+  <!-- 根据用户id 删除用户信息 -->
+  <update id="deleteSysUser" parameterType="com.inf.sys.user.model.TbSysUser">
+     UPDATE  tb_sys_user SET
+        STATUS=1,
+        UPDATE_USER=#{updateUser,jdbcType=VARCHAR},
+        UPDATE_TIMES=NOW()
+     WHERE USER_ID = #{userId,jdbcType=VARCHAR}
+  </update>
+</mapper>
